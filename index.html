@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🍪 CookieManager App</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Fuente Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: {
+                        appBlue: '#0099ff', 
+                        appDarkBlue: '#0055b3',
+                        appCyan: '#00d4ff',
+                        appYellow: '#fcd34d' 
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        
+        .wave-container {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; overflow: hidden; line-height: 0; transform: rotate(180deg);
+        }
+        .wave-container svg {
+            position: relative; display: block; width: calc(130% + 1.3px); height: 80px;
+        }
+        .bottom-nav-shadow { box-shadow: 0 -4px 20px rgba(0,0,0,0.05); }
+        .floating-btn { box-shadow: 0 4px 15px rgba(0, 153, 255, 0.4); }
+        
+        /* Animaciones */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="text-gray-700 pb-24">
+
+    <!-- JSON CONFIG -->
+    <script>
+        const CATÁLOGO_GALLETAS = [
+            { nombre: "Chispas de Chocolate", precio: 25 },
+            { nombre: "Avena y Pasas",       precio: 25 },
+            { nombre: "Nuez (Besitos)",      precio: 25 },
+            { nombre: "Mantequilla",         precio: 25 },
+            { nombre: "Rellenas de Cajeta",  precio: 25 },
+            { nombre: "Mixtas (Surtido)",    precio: 25 }
+        ];
+    </script>
+
+    <!-- HEADER -->
+    <header class="relative bg-gradient-to-b from-appBlue to-appCyan text-white pt-8 pb-24 px-6 rounded-b-[30px] shadow-lg overflow-hidden">
+        <div class="flex justify-between items-center mb-6 z-10 relative">
+            <div>
+                <p class="text-sm opacity-90" id="currentDate">...</p>
+                <h1 class="text-lg font-bold">Mis Ventas 🍪</h1>
+            </div>
+            <button onclick="clearConfig()" class="opacity-70 hover:opacity-100 text-sm border border-white/30 px-3 py-1 rounded-full">Config</button>
+        </div>
+
+        <div class="text-center z-10 relative mt-2">
+            <p class="text-sm font-light opacity-90 mb-1">Total Vendido Hoy</p>
+            <h2 class="text-5xl font-bold tracking-tight" id="headerTotalVentas">$0.00</h2>
+            <div class="mt-4 flex justify-center gap-2">
+                <span class="bg-white/20 px-4 py-1 rounded-full text-xs backdrop-blur-sm">
+                    Deuda pendiente: <span id="headerDeuda" class="font-bold text-yellow-200">$0.00</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Wave SVG -->
+        <div class="wave-container opacity-20">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="#FFFFFF"></path>
+            </svg>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="container mx-auto px-4 -mt-10 relative z-20">
+
+        <!-- TAB: DASHBOARD -->
+        <div id="dashboard" class="tab-content fade-in">
+            <div class="bg-white rounded-2xl shadow-lg p-5 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-gray-600">Top Productos</h3>
+                    <span class="text-xs text-appBlue font-semibold cursor-pointer" onclick="fetchData()">🔄 Actualizar</span>
+                </div>
+                <div class="h-48 flex justify-center">
+                    <canvas id="chartTipos"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-5 pb-20">
+                 <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-gray-600">Últimos Movimientos</h3>
+                    <button onclick="showTab('historial')" class="text-xs text-appBlue">Ver todos</button>
+                </div>
+                <div id="miniHistorialList" class="space-y-4"></div>
+            </div>
+        </div>
+
+        <!-- TAB: NUEVA VENTA / EDITAR -->
+        <div id="nueva" class="tab-content hidden fade-in">
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="formTitle" class="text-xl font-bold text-appDarkBlue">Registrar Venta</h2>
+                    <button id="cancelEditBtn" onclick="resetForm()" class="hidden text-xs text-red-500 underline">Cancelar Edición</button>
+                </div>
+                
+                <form id="ventaForm" onsubmit="submitVenta(event)">
+                    <input type="hidden" id="editId" value=""> <!-- ID oculto para edición -->
+
+                    <div class="mb-6 text-center">
+                        <label class="block text-xs text-gray-400 uppercase tracking-wide mb-1">Monto a Cobrar</label>
+                        <input type="text" id="precio" readonly class="text-4xl font-bold text-center w-full text-appBlue bg-transparent border-b-2 border-appBlue focus:outline-none pb-2" value="$25.00">
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm font-semibold text-gray-600 ml-1">Cliente</label>
+                            <input type="text" id="cliente" required class="w-full bg-gray-50 rounded-xl px-4 py-3 mt-1 text-gray-700 border-none focus:ring-2 focus:ring-appBlue transition" placeholder="¿Quién compra?">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-sm font-semibold text-gray-600 ml-1">Galleta</label>
+                                <select id="tipo" class="w-full bg-gray-50 rounded-xl px-4 py-3 mt-1 text-gray-700 border-none focus:ring-2 focus:ring-appBlue appearance-none" onchange="calcularTotal()">
+                                    <!-- Opciones JS -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-sm font-semibold text-gray-600 ml-1">Cantidad</label>
+                                <input type="number" id="cantidad" value="1" min="1" class="w-full bg-gray-50 rounded-xl px-4 py-3 mt-1 text-gray-700 border-none focus:ring-2 focus:ring-appBlue text-center" oninput="calcularTotal()">
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <label class="text-sm font-semibold text-gray-600 ml-1 block mb-2">Estado del Pago</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="estado" id="estadoPagado" value="Pagado" checked class="peer sr-only">
+                                    <div class="rounded-xl border-2 border-gray-100 p-3 text-center peer-checked:border-green-500 peer-checked:bg-green-50 transition">
+                                        <div class="text-green-600 font-bold">Pagado</div>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="estado" id="estadoDebe" value="Debe" class="peer sr-only">
+                                    <div class="rounded-xl border-2 border-gray-100 p-3 text-center peer-checked:border-red-500 peer-checked:bg-red-50 transition">
+                                        <div class="text-red-600 font-bold">Fiado (Debe)</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btnGuardar" class="w-full mt-8 bg-appYellow text-appDarkBlue font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transform active:scale-95 transition text-lg">
+                        Confirmar Venta
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB: DEUDAS -->
+        <div id="deudas" class="tab-content hidden fade-in">
+            <div class="bg-white rounded-2xl shadow-lg p-5">
+                <div class="flex items-center gap-2 mb-6 p-4 bg-red-50 rounded-xl border border-red-100">
+                    <div class="bg-red-500 rounded-full p-2 text-white">⚠️</div>
+                    <div>
+                        <p class="text-xs text-red-400 font-bold uppercase">Total por Cobrar</p>
+                        <p class="text-xl font-bold text-red-600" id="pageDeudaTotal">$0.00</p>
+                    </div>
+                </div>
+
+                <div id="listaDeudasBody" class="space-y-3 pb-20"></div>
+                <div id="noDeudasMsg" class="hidden text-center py-10 text-gray-400">¡Todo pagado! 🎉</div>
+            </div>
+        </div>
+
+        <!-- TAB: HISTORIAL -->
+        <div id="historial" class="tab-content hidden fade-in">
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden pb-20">
+                <div class="p-4 bg-gray-50 border-b">
+                    <h3 class="font-bold text-gray-600">Historial Completo</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-gray-500 uppercase bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3">Detalle</th>
+                                <th class="px-4 py-3 text-right">$$</th>
+                                <th class="px-4 py-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historialBody" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- NAV BAR -->
+    <nav class="fixed bottom-0 left-0 w-full bg-white bottom-nav-shadow rounded-t-2xl z-50 px-6 py-2 flex justify-between items-center text-xs text-gray-400 font-medium">
+        <button onclick="showTab('dashboard')" class="nav-btn flex flex-col items-center gap-1 w-12 text-appBlue" id="nav-dashboard">
+            <span class="text-2xl">📊</span><span>Inicio</span>
+        </button>
+        <button onclick="showTab('deudas')" class="nav-btn flex flex-col items-center gap-1 w-12" id="nav-deudas">
+            <span class="text-2xl">💸</span><span>Deudas</span>
+        </button>
+        <div class="relative -top-6">
+            <button onclick="resetForm(); showTab('nueva')" class="w-14 h-14 bg-appYellow rounded-full flex items-center justify-center text-white floating-btn transform hover:scale-105 transition duration-200 shadow-xl">
+                <span class="text-3xl text-appDarkBlue font-bold">+</span>
+            </button>
+        </div>
+        <button onclick="showTab('historial')" class="nav-btn flex flex-col items-center gap-1 w-12" id="nav-historial">
+            <span class="text-2xl">📅</span><span>Historial</span>
+        </button>
+    </nav>
+
+    <!-- MODAL CONFIG -->
+    <div id="configSection" class="fixed inset-0 bg-gray-900 bg-opacity-90 z-[60] flex items-center justify-center p-4 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+            <h2 class="text-xl font-bold text-center mb-4">Conectar DB</h2>
+            <input type="text" id="scriptUrlInput" placeholder="URL del Script..." class="w-full bg-gray-50 border p-3 rounded-xl mb-4 text-sm">
+            <button onclick="saveConfig()" class="w-full bg-appBlue text-white py-3 rounded-xl font-bold">Guardar</button>
+        </div>
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        let SCRIPT_URL = localStorage.getItem('galletasAppUrl');
+        let globalData = [];
+        let charts = {};
+
+        // Fecha Header
+        document.getElementById('currentDate').innerText = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarOpcionesGalletas();
+            if (!SCRIPT_URL) document.getElementById('configSection').classList.remove('hidden');
+            else fetchData();
+        });
+
+        // --- FUNCIONES CORE ---
+
+        function cargarOpcionesGalletas() {
+            const select = document.getElementById('tipo');
+            select.innerHTML = '';
+            CATÁLOGO_GALLETAS.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g.nombre;
+                opt.text = g.nombre;
+                opt.setAttribute('data-precio', g.precio);
+                select.appendChild(opt);
+            });
+            calcularTotal();
+        }
+
+        function calcularTotal() {
+            const select = document.getElementById('tipo');
+            const cantidad = parseInt(document.getElementById('cantidad').value) || 0;
+            const precioUnitario = parseFloat(select.options[select.selectedIndex]?.getAttribute('data-precio')) || 0;
+            document.getElementById('precio').value = `$${(precioUnitario * cantidad).toFixed(2)}`;
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const json = await response.json();
+                if (json.result === 'success') {
+                    globalData = json.data;
+                    processData();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // --- ACCIONES (CRUD) ---
+
+        async function submitVenta(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnGuardar');
+            const originalText = btn.innerText;
+            btn.innerText = 'Procesando...';
+            btn.disabled = true;
+
+            const editId = document.getElementById('editId').value;
+            const rawPrecio = document.getElementById('precio').value.replace('$','');
+            
+            // Determinar Acción: 'create' o 'update'
+            const action = editId ? 'update' : 'create';
+
+            const payload = {
+                action: action,
+                id: editId, // Si es create, esto va vacío y el server genera uno
+                cliente: document.getElementById('cliente').value,
+                tipo: document.getElementById('tipo').value,
+                cantidad: document.getElementById('cantidad').value,
+                precio: rawPrecio,
+                estado: document.querySelector('input[name="estado"]:checked').value
+            };
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+
+                if (result.result === 'success') {
+                    Swal.fire({ icon: 'success', title: editId ? 'Actualizado' : 'Registrado', timer: 1500, showConfirmButton: false });
+                    resetForm();
+                    fetchData();
+                    showTab('dashboard');
+                } else {
+                    Swal.fire('Error', result.message || 'Error desconocido', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Error de conexión', 'error');
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function deleteItem(id) {
+            const result = await Swal.fire({
+                title: '¿Borrar venta?',
+                text: "No se puede deshacer",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Sí, borrar'
+            });
+
+            if (result.isConfirmed) {
+                Swal.fire({title: 'Borrando...', didOpen: () => Swal.showLoading()});
+                try {
+                    await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'delete', id: id })
+                    });
+                    Swal.fire('Borrado', '', 'success');
+                    fetchData();
+                } catch (e) {
+                    Swal.fire('Error', 'No se pudo borrar', 'error');
+                }
+            }
+        }
+
+        function editItem(id) {
+            // Buscar datos en memoria local
+            const item = globalData.find(d => d.id == id); // Comparacion flexible por si es string/num
+            if (!item) return;
+
+            // Llenar formulario
+            document.getElementById('editId').value = item.id;
+            document.getElementById('cliente').value = item.Cliente;
+            document.getElementById('tipo').value = item.Tipo;
+            document.getElementById('cantidad').value = item.Cantidad;
+            
+            if (item.Estado === 'Pagado') document.getElementById('estadoPagado').checked = true;
+            else document.getElementById('estadoDebe').checked = true;
+
+            calcularTotal(); // Recalcular precio basado en la cantidad cargada
+            
+            // Cambiar UI a modo edición
+            document.getElementById('formTitle').innerText = 'Editar Venta ✏️';
+            document.getElementById('btnGuardar').innerText = 'Actualizar Cambios';
+            document.getElementById('btnGuardar').classList.replace('bg-appYellow', 'bg-blue-500');
+            document.getElementById('btnGuardar').classList.add('text-white');
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+
+            showTab('nueva');
+        }
+
+        function resetForm() {
+            document.getElementById('ventaForm').reset();
+            document.getElementById('editId').value = '';
+            document.getElementById('formTitle').innerText = 'Registrar Venta';
+            document.getElementById('btnGuardar').innerText = 'Confirmar Venta';
+            document.getElementById('btnGuardar').classList.replace('bg-blue-500', 'bg-appYellow');
+            document.getElementById('btnGuardar').classList.remove('text-white');
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+            
+            // Reset selects
+            document.getElementById('tipo').selectedIndex = 0;
+            document.getElementById('cantidad').value = 1;
+            document.getElementById('estadoPagado').checked = true;
+            calcularTotal();
+        }
+
+        // --- RENDERIZADO ---
+
+        function processData() {
+            const today = new Date().toDateString();
+            let ventasHoy = 0, deudaTotal = 0;
+            const ventasPorTipo = {}, deudasPorPersona = {};
+
+            const historialList = document.getElementById('historialBody');
+            const miniList = document.getElementById('miniHistorialList');
+            historialList.innerHTML = '';
+            miniList.innerHTML = '';
+
+            const sorted = [...globalData].reverse();
+
+            sorted.forEach((item, idx) => {
+                // Parseo seguro de fecha
+                const dateObj = new Date(item.Fecha);
+                const precio = parseFloat(item.PrecioTotal || 0);
+                const id = item.id; 
+
+                // Métricas
+                if (dateObj.toDateString() === today) ventasHoy += precio;
+                if (item.Estado === 'Debe') {
+                    deudaTotal += precio;
+                    deudasPorPersona[item.Cliente] = (deudasPorPersona[item.Cliente] || 0) + precio;
+                }
+                ventasPorTipo[item.Tipo] = (ventasPorTipo[item.Tipo] || 0) + parseInt(item.Cantidad);
+
+                // HTML Elements
+                const estadoBadge = item.Estado === 'Pagado' 
+                    ? `<span class="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded font-bold">Pagado</span>` 
+                    : `<span class="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded font-bold">Debe</span>`;
+
+                // 1. Mini Historial (Dashboard) - Sin botones de acción
+                if (idx < 5) {
+                    miniList.innerHTML += `
+                        <div class="flex justify-between items-center p-3 border-b border-gray-50 last:border-0">
+                            <div>
+                                <p class="font-bold text-sm text-gray-700">${item.Tipo}</p>
+                                <p class="text-xs text-gray-400">${item.Cliente} • ${item.Cantidad} pzs</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-appBlue">$${precio.toFixed(2)}</p>
+                                ${estadoBadge}
+                            </div>
+                        </div>`;
+                }
+
+                // 2. Historial Completo (Con Editar/Borrar)
+                // Solo mostramos botones si hay ID (registros viejos sin ID no se pueden editar)
+                const actionButtons = id ? `
+                    <div class="flex justify-center gap-3 mt-2">
+                        <button onclick="editItem('${id}')" class="text-blue-500 bg-blue-50 p-2 rounded-full hover:bg-blue-100 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                        <button onclick="deleteItem('${id}')" class="text-red-500 bg-red-50 p-2 rounded-full hover:bg-red-100 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                    </div>
+                ` : `<span class="text-xs text-gray-300">Sin ID</span>`;
+
+                historialList.innerHTML += `
+                    <tr class="bg-white hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <div class="font-bold text-gray-700">${item.Cliente}</div>
+                            <div class="text-xs text-gray-500">${item.Cantidad}x ${item.Tipo}</div>
+                            <div class="text-[10px] text-gray-400">${dateObj.toLocaleDateString()}</div>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="font-bold ${item.Estado === 'Debe' ? 'text-red-500' : 'text-gray-700'}">$${precio.toFixed(2)}</div>
+                            ${estadoBadge}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            ${actionButtons}
+                        </td>
+                    </tr>`;
+            });
+
+            // Update Header Values
+            animateValue("headerTotalVentas", parseFloat(document.getElementById('headerTotalVentas').innerText.replace('$','')) || 0, ventasHoy, 800);
+            document.getElementById('headerDeuda').innerText = `$${deudaTotal.toFixed(2)}`;
+            document.getElementById('pageDeudaTotal').innerText = `$${deudaTotal.toFixed(2)}`;
+
+            // Render Deudas
+            const deudasBody = document.getElementById('listaDeudasBody');
+            deudasBody.innerHTML = '';
+            const deudores = Object.entries(deudasPorPersona).sort((a,b) => b[1] - a[1]);
+
+            if (deudores.length === 0) document.getElementById('noDeudasMsg').classList.remove('hidden');
+            else {
+                document.getElementById('noDeudasMsg').classList.add('hidden');
+                deudores.forEach(([cliente, monto]) => {
+                    if (monto > 0) {
+                        deudasBody.innerHTML += `
+                            <div class="flex items-center justify-between bg-white border border-gray-100 p-4 rounded-xl shadow-sm">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center font-bold text-lg">${cliente.charAt(0).toUpperCase()}</div>
+                                    <div>
+                                        <p class="font-bold text-gray-700">${cliente}</p>
+                                        <p class="text-xs text-red-500 font-semibold">Debe: $${monto.toFixed(2)}</p>
+                                    </div>
+                                </div>
+                                <button onclick="whatsapp('${cliente}', ${monto})" class="bg-green-500 text-white p-2 rounded-full shadow hover:bg-green-600 transition">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-8.683-2.031-.967-.272-.297-.471-.446-.916-.446-.445 0-.966.173-1.462.718-.495.545-1.88 1.832-1.88 4.467 0 2.636 1.918 5.182 2.19 5.553.272.372 3.7 5.864 9.177 8.01 3.784 1.482 4.561 1.19 5.378 1.116.817-.075 2.601-1.065 2.973-2.093.371-1.028.371-1.908.272-2.081z"/></svg>
+                                </button>
+                            </div>`;
+                    }
+                });
+            }
+            renderCharts(ventasPorTipo);
+        }
+
+        // Utils
+        function whatsapp(c, m) { window.open(`https://wa.me/?text=${encodeURIComponent(`Hola ${c}, saldo pendiente: $${m} por galletas 🍪`)}`, '_blank'); }
+        function showTab(id) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('text-appBlue'));
+            const active = document.getElementById('nav-' + id);
+            if(active) active.classList.add('text-appBlue');
+            if(id === 'dashboard') renderCharts();
+        }
+        function saveConfig() { localStorage.setItem('galletasAppUrl', document.getElementById('scriptUrlInput').value); location.reload(); }
+        function clearConfig() { if(confirm('¿Desconectar?')) { localStorage.removeItem('galletasAppUrl'); location.reload(); } }
+        
+        function animateValue(id, start, end, duration) {
+            if (start === end) return;
+            const range = end - start; let current = start;
+            const increment = end > start ? 1 : -1;
+            const stepTime = Math.abs(Math.floor(duration / range));
+            const obj = document.getElementById(id);
+            const timer = setInterval(() => {
+                current += increment;
+                obj.innerHTML = "$" + current.toFixed(2);
+                if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) { clearInterval(timer); obj.innerHTML = "$" + end.toFixed(2); }
+            }, stepTime || 10);
+        }
+
+        function renderCharts(data) {
+            if(!data && !globalData.length) return;
+            if (charts.tipo) charts.tipo.destroy();
+            const ctx = document.getElementById('chartTipos').getContext('2d');
+            charts.tipo = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(data || {}),
+                    datasets: [{ data: Object.values(data || {}), backgroundColor: ['#0099ff', '#00d4ff', '#fcd34d', '#ff6b6b', '#a5b4fc'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true } } }, cutout: '75%' }
+            });
+        }
+    </script>
+</body>
+</html>
