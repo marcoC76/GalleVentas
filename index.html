@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🍪 CookieManager App</title>
+    <title>🍪 CookieManager Pro</title>
+    <!-- Librerías -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -14,7 +15,12 @@
             theme: {
                 extend: {
                     fontFamily: { sans: ['Poppins', 'sans-serif'] },
-                    colors: { appBlue: '#0099ff', appDarkBlue: '#0055b3', appCyan: '#00d4ff', appYellow: '#fcd34d' }
+                    colors: {
+                        appBlue: '#0099ff', 
+                        appDarkBlue: '#0055b3',
+                        appCyan: '#00d4ff',
+                        appYellow: '#fcd34d' 
+                    }
                 }
             }
         }
@@ -32,14 +38,17 @@
 </head>
 <body class="text-gray-700 pb-28">
 
+    <!-- CONFIGURACIÓN: NUEVA LISTA DE PRODUCTOS -->
     <script>
         const CATÁLOGO_GALLETAS = [
-            { nombre: "Chispas de Chocolate", precio: 25 },
-            { nombre: "Avena y Pasas",       precio: 25 },
-            { nombre: "Nuez (Besitos)",      precio: 25 },
-            { nombre: "Mantequilla",         precio: 25 },
-            { nombre: "Rellenas de Cajeta",  precio: 25 },
-            { nombre: "Mixtas (Surtido)",    precio: 25 }
+            { nombre: "Chispas de Chocolate s/m",   precio: 25 },
+            { nombre: "Chispas blancas c/arándanos", precio: 25 },
+            { nombre: "Nuez",                       precio: 25 },
+            { nombre: "Mantequilla",                precio: 25 },
+            { nombre: "Mermelada Piña",             precio: 25 },
+            { nombre: "Mermelada Zarzamora",        precio: 25 },
+            { nombre: "Mermelada Chabacano",        precio: 25 },
+            { nombre: "Brownie",                    precio: 25 }
         ];
     </script>
 
@@ -64,12 +73,42 @@
 
     <main class="container mx-auto px-4 -mt-10 relative z-20">
 
-        <!-- DASHBOARD -->
+        <!-- DASHBOARD (Estadísticas) -->
         <div id="dashboard" class="tab-content fade-in">
-            <div class="bg-white rounded-2xl shadow-lg p-5 mb-6">
-                <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-gray-600">Top Productos</h3><span class="text-xs text-appBlue font-semibold cursor-pointer" onclick="fetchData()">🔄 Actualizar</span></div>
-                <div class="h-48 flex justify-center"><canvas id="chartTipos"></canvas></div>
+            
+            <div class="flex justify-end mb-2">
+                <span class="text-xs text-appBlue font-semibold cursor-pointer bg-white px-3 py-1 rounded-full shadow-sm" onclick="fetchData()">🔄 Actualizar datos</span>
             </div>
+
+            <!-- Grilla de Gráficas -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                
+                <!-- 1. Top Productos (Existente) -->
+                <div class="bg-white rounded-2xl shadow-lg p-4">
+                    <h3 class="font-bold text-gray-600 text-sm mb-2 text-center">Top Productos (Total)</h3>
+                    <div class="h-48 flex justify-center"><canvas id="chartTipos"></canvas></div>
+                </div>
+
+                <!-- 2. Ventas últimos 7 días (NUEVA) -->
+                <div class="bg-white rounded-2xl shadow-lg p-4">
+                    <h3 class="font-bold text-gray-600 text-sm mb-2 text-center">Ventas últimos 7 días ($)</h3>
+                    <div class="h-48 flex justify-center"><canvas id="chartTendencia"></canvas></div>
+                </div>
+
+                <!-- 3. Pagado vs Debe (NUEVA) -->
+                <div class="bg-white rounded-2xl shadow-lg p-4">
+                    <h3 class="font-bold text-gray-600 text-sm mb-2 text-center">Estatus Financiero</h3>
+                    <div class="h-48 flex justify-center"><canvas id="chartStatus"></canvas></div>
+                </div>
+
+                <!-- 4. Top Clientes (NUEVA) -->
+                <div class="bg-white rounded-2xl shadow-lg p-4">
+                    <h3 class="font-bold text-gray-600 text-sm mb-2 text-center">Mejores Clientes</h3>
+                    <div class="h-48 flex justify-center"><canvas id="chartClientes"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Mini Historial -->
             <div class="bg-white rounded-2xl shadow-lg p-5 pb-20">
                  <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-gray-600">Últimos Movimientos</h3><button onclick="showTab('historial')" class="text-xs text-appBlue">Ver todos</button></div>
                 <div id="miniHistorialList" class="space-y-4"></div>
@@ -79,7 +118,6 @@
         <!-- NUEVA ORDEN -->
         <div id="nueva" class="tab-content hidden fade-in">
             <div class="bg-white rounded-2xl shadow-lg p-6">
-                
                 <h2 id="formTitle" class="text-xl font-bold text-appDarkBlue mb-4">Nueva Orden</h2>
                 <input type="hidden" id="editId">
                 <div id="editModeAlert" class="hidden bg-yellow-50 text-yellow-700 p-2 rounded mb-4 text-xs flex justify-between items-center border border-yellow-200">
@@ -87,19 +125,16 @@
                     <button onclick="resetForm()" class="text-red-500 underline font-bold">Cancelar</button>
                 </div>
 
-                <!-- CAMPO DE FECHA -->
                 <div class="mb-4">
-                    <label class="text-xs font-bold text-gray-400 uppercase">Fecha de Venta</label>
+                    <label class="text-xs font-bold text-gray-400 uppercase">Fecha</label>
                     <input type="date" id="fechaVenta" class="w-full bg-gray-50 rounded-xl px-4 py-3 mt-1 text-gray-700 border-none focus:ring-2 focus:ring-appBlue transition">
                 </div>
 
-                <!-- CLIENTE -->
                 <div class="mb-4">
                     <label class="text-xs font-bold text-gray-400 uppercase">Cliente</label>
                     <input type="text" id="cliente" class="w-full bg-gray-50 rounded-xl px-4 py-3 mt-1 text-gray-700 border-none focus:ring-2 focus:ring-appBlue transition" placeholder="Nombre del cliente">
                 </div>
 
-                <!-- AGREGAR PRODUCTO -->
                 <div class="bg-blue-50 p-4 rounded-xl mb-4 border border-blue-100">
                     <label class="text-xs font-bold text-appBlue uppercase mb-2 block">Agregar Producto</label>
                     <div class="grid grid-cols-[2fr_1fr] gap-2 mb-2">
@@ -112,9 +147,8 @@
                     </div>
                 </div>
 
-                <!-- CARRITO -->
                 <div id="cartSection" class="mb-6">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">Carrito de Compras</h3>
+                    <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">Carrito</h3>
                     <div id="cartList" class="space-y-2 mb-4 max-h-40 overflow-y-auto pr-1">
                         <p class="text-sm text-gray-300 italic text-center py-2">Carrito vacío</p>
                     </div>
@@ -132,7 +166,6 @@
                         <button onclick="procesarPedido()" id="btnFinalizar" class="w-full bg-appYellow text-appDarkBlue font-bold py-3 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition">Confirmar Venta</button>
                     </div>
                 </div>
-
             </div>
         </div>
 
@@ -188,11 +221,8 @@
 
         document.getElementById('currentDate').innerText = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
 
-        // Establecer fecha de hoy al iniciar
         document.addEventListener('DOMContentLoaded', () => {
-            // Poner fecha hoy en el input date
             document.getElementById('fechaVenta').valueAsDate = new Date();
-            
             cargarOpcionesGalletas();
             if (!SCRIPT_URL) document.getElementById('configSection').classList.remove('hidden');
             else fetchData();
@@ -209,14 +239,12 @@
             });
             calcularPrecioItem();
         }
-
         function calcularPrecioItem() {
             const select = document.getElementById('tipo');
             const cantidad = parseInt(document.getElementById('cantidad').value) || 0;
             const precioUnitario = parseFloat(select.options[select.selectedIndex]?.getAttribute('data-precio')) || 0;
             document.getElementById('itemPricePreview').innerText = `$${(precioUnitario * cantidad).toFixed(2)}`;
         }
-
         function agregarAlCarrito() {
             if (isEditing) return;
             const select = document.getElementById('tipo');
@@ -228,241 +256,196 @@
             document.getElementById('cantidad').value = 1;
             calcularPrecioItem();
         }
-
-        function borrarDelCarrito(tempId) {
-            cart = cart.filter(item => item.id !== tempId);
-            renderCart();
-        }
-
+        function borrarDelCarrito(tempId) { cart = cart.filter(item => item.id !== tempId); renderCart(); }
         function renderCart() {
-            const list = document.getElementById('cartList');
-            const totalDisplay = document.getElementById('cartTotal');
-            list.innerHTML = '';
-            let total = 0;
-            if (cart.length === 0) {
-                list.innerHTML = '<p class="text-sm text-gray-300 italic text-center py-2">Carrito vacío</p>';
-                document.getElementById('btnFinalizar').disabled = true;
-                document.getElementById('btnFinalizar').classList.add('opacity-50');
-            } else {
-                document.getElementById('btnFinalizar').disabled = false;
-                document.getElementById('btnFinalizar').classList.remove('opacity-50');
-                cart.forEach(item => {
-                    total += parseFloat(item.precioTotal);
-                    list.innerHTML += `<div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg border border-gray-100"><div><p class="text-sm font-bold text-gray-700">${item.tipo}</p><p class="text-xs text-gray-500">x${item.cantidad}</p></div><div class="flex items-center gap-3"><p class="text-sm font-bold text-appDarkBlue">$${item.precioTotal}</p><button onclick="borrarDelCarrito(${item.id})" class="text-red-400 font-bold px-1">✕</button></div></div>`;
-                });
+            const list = document.getElementById('cartList'); const totalDisplay = document.getElementById('cartTotal');
+            list.innerHTML = ''; let total = 0;
+            if (cart.length === 0) { list.innerHTML = '<p class="text-sm text-gray-300 italic text-center py-2">Carrito vacío</p>'; document.getElementById('btnFinalizar').disabled = true; document.getElementById('btnFinalizar').classList.add('opacity-50'); }
+            else { document.getElementById('btnFinalizar').disabled = false; document.getElementById('btnFinalizar').classList.remove('opacity-50');
+                cart.forEach(item => { total += parseFloat(item.precioTotal); list.innerHTML += `<div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg border border-gray-100"><div><p class="text-sm font-bold text-gray-700">${item.tipo}</p><p class="text-xs text-gray-500">x${item.cantidad}</p></div><div class="flex items-center gap-3"><p class="text-sm font-bold text-appDarkBlue">$${item.precioTotal}</p><button onclick="borrarDelCarrito(${item.id})" class="text-red-400 font-bold px-1">✕</button></div></div>`; });
             }
             totalDisplay.innerText = `$${total.toFixed(2)}`;
         }
 
-        // --- ENVIAR DATOS ---
+        // --- ENVIAR ---
         async function procesarPedido() {
             const cliente = document.getElementById('cliente').value;
             const estado = document.querySelector('input[name="estado"]:checked').value;
             if (!cliente) { Swal.fire('Falta Cliente', '', 'warning'); return; }
-
             if (isEditing) await submitEditSingle();
-            else {
-                if (cart.length === 0) { Swal.fire('Carrito Vacío', '', 'warning'); return; }
-                await submitBatch(cliente, estado);
-            }
+            else { if (cart.length === 0) { Swal.fire('Carrito Vacío', '', 'warning'); return; } await submitBatch(cliente, estado); }
         }
-
         async function submitBatch(cliente, estado) {
-            const btn = document.getElementById('btnFinalizar');
-            btn.innerText = 'Enviando...'; btn.disabled = true;
-            
-            // Obtener fecha del input
-            const fechaVal = document.getElementById('fechaVenta').value;
-
-            const payload = {
-                action: 'createBatch',
-                cliente: cliente,
-                estado: estado,
-                fecha: fechaVal, // Enviamos la fecha seleccionada
-                items: cart.map(i => ({ tipo: i.tipo, cantidad: i.cantidad, precio: i.precioTotal }))
-            };
-
-            try {
-                const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-                const json = await res.json();
-                if (json.result === 'success') {
-                    Swal.fire({ icon: 'success', title: 'Guardado', showConfirmButton: false, timer: 1500 });
-                    resetForm();
-                    fetchData();
-                    showTab('dashboard');
-                } else Swal.fire('Error', json.message, 'error');
-            } catch (e) { Swal.fire('Error de conexión', '', 'error'); }
-            finally { btn.innerText = 'Confirmar Venta'; btn.disabled = false; }
+            const btn = document.getElementById('btnFinalizar'); btn.innerText = 'Enviando...'; btn.disabled = true;
+            const payload = { action: 'createBatch', cliente: cliente, estado: estado, fecha: document.getElementById('fechaVenta').value, items: cart.map(i => ({ tipo: i.tipo, cantidad: i.cantidad, precio: i.precioTotal })) };
+            try { const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) }); const json = await res.json(); if (json.result === 'success') { Swal.fire({ icon: 'success', title: 'Guardado', showConfirmButton: false, timer: 1500 }); resetForm(); fetchData(); showTab('dashboard'); } else Swal.fire('Error', json.message, 'error'); } catch (e) { Swal.fire('Error', '', 'error'); } finally { btn.innerText = 'Confirmar Venta'; btn.disabled = false; }
         }
 
         // --- EDICIÓN ---
         function editItem(id) {
-            const item = globalData.find(d => d.id == id);
-            if (!item) return;
-
-            isEditing = true;
-            document.getElementById('editId').value = item.id;
-            document.getElementById('cliente').value = item.Cliente;
-            
-            // Poner la fecha original del registro en el input
-            const fechaOriginal = new Date(item.Fecha);
-            // Ajuste para formato YYYY-MM-DD
-            const year = fechaOriginal.getFullYear();
-            const month = String(fechaOriginal.getMonth() + 1).padStart(2, '0');
-            const day = String(fechaOriginal.getDate()).padStart(2, '0');
-            document.getElementById('fechaVenta').value = `${year}-${month}-${day}`;
-
-            document.getElementById('editModeAlert').classList.remove('hidden');
-            document.getElementById('formTitle').innerText = 'Editar Registro';
-            document.getElementById('cartSection').classList.remove('hidden');
-            document.getElementById('cartList').classList.add('hidden');
-            document.getElementById('btnAddCart').classList.add('hidden');
-
-            document.getElementById('tipo').value = item.Tipo;
-            document.getElementById('cantidad').value = item.Cantidad;
-            if (item.Estado === 'Pagado') document.querySelector('input[value="Pagado"]').checked = true;
-            else document.querySelector('input[value="Debe"]').checked = true;
-
-            const btn = document.getElementById('btnFinalizar');
-            btn.innerText = 'Guardar Cambios'; btn.classList.replace('bg-appYellow', 'bg-appBlue'); btn.classList.add('text-white'); btn.disabled = false; btn.classList.remove('opacity-50');
+            const item = globalData.find(d => d.id == id); if (!item) return;
+            isEditing = true; document.getElementById('editId').value = item.id; document.getElementById('cliente').value = item.Cliente;
+            const fo = new Date(item.Fecha); document.getElementById('fechaVenta').value = fo.toISOString().split('T')[0];
+            document.getElementById('editModeAlert').classList.remove('hidden'); document.getElementById('formTitle').innerText = 'Editar Registro'; document.getElementById('cartSection').classList.remove('hidden'); document.getElementById('cartList').classList.add('hidden'); document.getElementById('btnAddCart').classList.add('hidden');
+            document.getElementById('tipo').value = item.Tipo; document.getElementById('cantidad').value = item.Cantidad;
+            if (item.Estado === 'Pagado') document.querySelector('input[value="Pagado"]').checked = true; else document.querySelector('input[value="Debe"]').checked = true;
+            const btn = document.getElementById('btnFinalizar'); btn.innerText = 'Guardar Cambios'; btn.classList.replace('bg-appYellow', 'bg-appBlue'); btn.classList.add('text-white'); btn.disabled = false; btn.classList.remove('opacity-50');
             document.getElementById('cartTotal').innerText = `$${item.PrecioTotal}`;
-            
-            document.getElementById('cantidad').addEventListener('input', updateEditTotal);
-            document.getElementById('tipo').addEventListener('change', updateEditTotal);
-            showTab('nueva');
+            document.getElementById('cantidad').addEventListener('input', updateEditTotal); document.getElementById('tipo').addEventListener('change', updateEditTotal); showTab('nueva');
         }
-
-        function updateEditTotal() {
-            if(!isEditing) return;
-            const select = document.getElementById('tipo');
-            const cant = parseInt(document.getElementById('cantidad').value) || 0;
-            const price = parseFloat(select.options[select.selectedIndex]?.getAttribute('data-precio')) || 0;
-            document.getElementById('cartTotal').innerText = `$${(price*cant).toFixed(2)}`;
-        }
-
+        function updateEditTotal() { if(!isEditing) return; const select = document.getElementById('tipo'); const cant = parseInt(document.getElementById('cantidad').value) || 0; const price = parseFloat(select.options[select.selectedIndex]?.getAttribute('data-precio')) || 0; document.getElementById('cartTotal').innerText = `$${(price*cant).toFixed(2)}`; }
         async function submitEditSingle() {
-            const btn = document.getElementById('btnFinalizar');
-            btn.innerText = 'Actualizando...'; btn.disabled = true;
-            const select = document.getElementById('tipo');
-            const cant = parseInt(document.getElementById('cantidad').value);
-            const priceUnit = parseFloat(select.options[select.selectedIndex]?.getAttribute('data-precio'));
-            
-            const payload = {
-                action: 'update',
-                id: document.getElementById('editId').value,
-                cliente: document.getElementById('cliente').value,
-                fecha: document.getElementById('fechaVenta').value, // Enviar fecha editada
-                tipo: select.value,
-                cantidad: cant,
-                precio: (cant * priceUnit).toFixed(2),
-                estado: document.querySelector('input[name="estado"]:checked').value
-            };
-
-            try {
-                await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-                Swal.fire({ icon: 'success', title: 'Actualizado', timer: 1000, showConfirmButton: false });
-                resetForm();
-                fetchData();
-                showTab('historial');
-            } catch (e) { Swal.fire('Error', '', 'error'); }
-            finally { btn.innerText = 'Confirmar Venta'; btn.disabled = false; }
+            const btn = document.getElementById('btnFinalizar'); btn.innerText = 'Actualizando...'; btn.disabled = true;
+            const select = document.getElementById('tipo'); const cant = parseInt(document.getElementById('cantidad').value); const priceUnit = parseFloat(select.options[select.selectedIndex]?.getAttribute('data-precio'));
+            const payload = { action: 'update', id: document.getElementById('editId').value, cliente: document.getElementById('cliente').value, fecha: document.getElementById('fechaVenta').value, tipo: select.value, cantidad: cant, precio: (cant * priceUnit).toFixed(2), estado: document.querySelector('input[name="estado"]:checked').value };
+            try { await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) }); Swal.fire({ icon: 'success', title: 'Actualizado', timer: 1000, showConfirmButton: false }); resetForm(); fetchData(); showTab('historial'); } catch (e) { Swal.fire('Error', '', 'error'); } finally { btn.innerText = 'Confirmar Venta'; btn.disabled = false; }
         }
 
         // --- BORRAR ---
         async function deleteItem(id) {
-            const result = await Swal.fire({ title: '¿Borrar?', text: "No se recuperará", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Borrar' });
+            const result = await Swal.fire({ title: '¿Borrar?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Borrar' });
             if (result.isConfirmed) {
                 Swal.fire({title: 'Borrando...', didOpen: () => Swal.showLoading()});
-                try {
-                    const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', id: id }) });
-                    const json = await res.json();
-                    if (json.result === 'success') {
-                        globalData = globalData.filter(item => item.id != id);
-                        processData();
-                        Swal.fire({ icon: 'success', title: 'Eliminado', showConfirmButton: false, timer: 1000 });
-                    }
-                } catch (e) { Swal.fire('Error', '', 'error'); }
+                try { const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', id: id }) }); const json = await res.json(); if (json.result === 'success') { globalData = globalData.filter(item => item.id != id); processData(); Swal.fire({ icon: 'success', title: 'Eliminado', showConfirmButton: false, timer: 1000 }); } } catch (e) { Swal.fire('Error', '', 'error'); }
             }
         }
+        function resetForm() { isEditing = false; cart = []; document.getElementById('cliente').value = ''; document.getElementById('editId').value = ''; document.getElementById('cantidad').value = 1; document.getElementById('tipo').selectedIndex = 0; document.querySelector('input[value="Pagado"]').checked = true; document.getElementById('fechaVenta').valueAsDate = new Date(); document.getElementById('editModeAlert').classList.add('hidden'); document.getElementById('formTitle').innerText = 'Nueva Orden'; document.getElementById('cartSection').classList.remove('hidden'); document.getElementById('cartList').classList.remove('hidden'); document.getElementById('btnAddCart').classList.remove('hidden'); const btn = document.getElementById('btnFinalizar'); btn.innerText = 'Confirmar Venta'; btn.classList.replace('bg-appBlue', 'bg-appYellow'); btn.classList.remove('text-white'); document.getElementById('cantidad').removeEventListener('input', updateEditTotal); document.getElementById('tipo').removeEventListener('change', updateEditTotal); renderCart(); calcularPrecioItem(); }
+        async function fetchData() { try { const res = await fetch(SCRIPT_URL); const json = await res.json(); if (json.result === 'success') { globalData = json.data; processData(); } } catch (e) {} }
 
-        function resetForm() {
-            isEditing = false;
-            cart = [];
-            document.getElementById('cliente').value = '';
-            document.getElementById('editId').value = '';
-            document.getElementById('cantidad').value = 1;
-            document.getElementById('tipo').selectedIndex = 0;
-            document.querySelector('input[value="Pagado"]').checked = true;
-            document.getElementById('fechaVenta').valueAsDate = new Date(); // Resetear a hoy
-
-            document.getElementById('editModeAlert').classList.add('hidden');
-            document.getElementById('formTitle').innerText = 'Nueva Orden';
-            document.getElementById('cartSection').classList.remove('hidden');
-            document.getElementById('cartList').classList.remove('hidden');
-            document.getElementById('btnAddCart').classList.remove('hidden');
-            
-            const btn = document.getElementById('btnFinalizar');
-            btn.innerText = 'Confirmar Venta'; btn.classList.replace('bg-appBlue', 'bg-appYellow'); btn.classList.remove('text-white');
-            
-            document.getElementById('cantidad').removeEventListener('input', updateEditTotal);
-            document.getElementById('tipo').removeEventListener('change', updateEditTotal);
-            renderCart(); calcularPrecioItem();
-        }
-
-        // --- FETCH & DATA ---
-        async function fetchData() {
-            try {
-                const res = await fetch(SCRIPT_URL);
-                const json = await res.json();
-                if (json.result === 'success') { globalData = json.data; processData(); }
-            } catch (e) {}
-        }
-
+        // --- PROCESAMIENTO DATOS & GRÁFICAS ---
         function processData() {
-            const today = new Date().toDateString();
-            let ventasHoy = 0, deudaTotal = 0;
+            const today = new Date().toDateString(); let ventasHoy = 0, deudaTotal = 0;
             const ventasPorTipo = {}, deudasPorPersona = {};
-            const histBody = document.getElementById('historialBody');
-            const miniBody = document.getElementById('miniHistorialList');
+            const histBody = document.getElementById('historialBody'); const miniBody = document.getElementById('miniHistorialList');
             histBody.innerHTML = ''; miniBody.innerHTML = '';
-
-            const sorted = [...globalData].reverse(); // Ordenar recientes primero
             
+            // Variables Nuevas Gráficas
+            const ventas7Dias = Array(7).fill(0); // Últimos 7 días
+            const labels7Dias = [];
+            const financialStatus = { 'Pagado': 0, 'Debe': 0 };
+            const clientSales = {};
+
+            // Preparar labels últimos 7 días
+            for(let i=6; i>=0; i--) {
+                const d = new Date(); d.setDate(d.getDate() - i);
+                labels7Dias.push(d.toLocaleDateString('es-ES', {weekday:'short'}));
+            }
+
+            const sorted = [...globalData].reverse();
+            const now = new Date();
+            now.setHours(0,0,0,0); // Normalizar hoy
+
             sorted.forEach((item, idx) => {
-                const d = new Date(item.Fecha);
+                const d = new Date(item.Fecha); d.setHours(12); // Asegurar zona horaria media
                 const p = parseFloat(item.PrecioTotal || 0);
-                
-                if (d.toDateString() === today) ventasHoy += p;
+
+                // Dashboard Basics
+                if (d.toDateString() === new Date().toDateString()) ventasHoy += p;
                 if (item.Estado === 'Debe') { deudaTotal += p; deudasPorPersona[item.Cliente] = (deudasPorPersona[item.Cliente] || 0) + p; }
                 ventasPorTipo[item.Tipo] = (ventasPorTipo[item.Tipo] || 0) + parseInt(item.Cantidad);
 
-                const badge = item.Estado === 'Pagado' ? '<span class="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded font-bold">Pagado</span>' : '<span class="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded font-bold">Debe</span>';
+                // --- DATA GRÁFICAS NUEVAS ---
+                // 1. Estatus Financiero
+                financialStatus[item.Estado] = (financialStatus[item.Estado] || 0) + p;
                 
-                if (idx < 5) miniBody.innerHTML += `<div class="flex justify-between items-center p-3 border-b border-gray-50 last:border-0"><div><span class="font-bold block text-sm text-gray-700">${item.Tipo}</span><span class="text-xs text-gray-400">${item.Cliente} (${item.Cantidad})</span></div><div class="text-right"><span class="font-bold text-appBlue block text-sm">$${p.toFixed(2)}</span>${badge}</div></div>`;
+                // 2. Clientes Top
+                clientSales[item.Cliente] = (clientSales[item.Cliente] || 0) + p;
 
-                histBody.innerHTML += `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-4 py-3"><div><span class="font-bold text-gray-700">${item.Cliente}</span><br><span class="text-xs text-gray-500">${item.Cantidad}x ${item.Tipo}</span></div><div class="text-[10px] text-gray-400">${d.toLocaleDateString()}</div></td><td class="px-4 py-3 text-right"><span class="font-bold text-gray-700 block">$${p.toFixed(2)}</span>${badge}</td><td class="px-4 py-3 text-center whitespace-nowrap"><button onclick="editItem('${item.id}')" class="text-blue-500 bg-blue-50 p-2 rounded-full mr-1 hover:bg-blue-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button><button onclick="deleteItem('${item.id}')" class="text-red-500 bg-red-50 p-2 rounded-full hover:bg-red-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></td></tr>`;
+                // 3. Tendencia 7 días
+                const diffTime = now - d.setHours(0,0,0,0);
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
+                if (diffDays >= 0 && diffDays < 7) {
+                    // diffDays 0 es hoy (índice 6), diffDays 6 es hace una semana (índice 0)
+                    ventas7Dias[6 - diffDays] += p;
+                }
+
+                // Render Listas
+                const badge = item.Estado === 'Pagado' ? '<span class="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded font-bold">Pagado</span>' : '<span class="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded font-bold">Debe</span>';
+                if (idx < 5) miniBody.innerHTML += `<div class="flex justify-between items-center p-3 border-b border-gray-50 last:border-0"><div><span class="font-bold block text-sm text-gray-700">${item.Tipo}</span><span class="text-xs text-gray-400">${item.Cliente} (${item.Cantidad})</span></div><div class="text-right"><span class="font-bold text-appBlue block text-sm">$${p.toFixed(2)}</span>${badge}</div></div>`;
+                const fechaStr = new Date(item.Fecha).toLocaleDateString();
+                histBody.innerHTML += `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-4 py-3"><div><span class="font-bold text-gray-700">${item.Cliente}</span><br><span class="text-xs text-gray-500">${item.Cantidad}x ${item.Tipo}</span></div><div class="text-[10px] text-gray-400">${fechaStr}</div></td><td class="px-4 py-3 text-right"><span class="font-bold text-gray-700 block">$${p.toFixed(2)}</span>${badge}</td><td class="px-4 py-3 text-center whitespace-nowrap"><button onclick="editItem('${item.id}')" class="text-blue-500 bg-blue-50 p-2 rounded-full mr-1">✏️</button><button onclick="deleteItem('${item.id}')" class="text-red-500 bg-red-50 p-2 rounded-full">🗑️</button></td></tr>`;
             });
 
             animateValue("headerTotalVentas", 0, ventasHoy, 800);
             document.getElementById('headerDeuda').innerText = `$${deudaTotal.toFixed(2)}`;
             document.getElementById('pageDeudaTotal').innerText = `$${deudaTotal.toFixed(2)}`;
-            
             const deudasBody = document.getElementById('listaDeudasBody'); deudasBody.innerHTML = '';
             const deudores = Object.entries(deudasPorPersona).sort((a,b)=>b[1]-a[1]);
             if(deudores.length===0) document.getElementById('noDeudasMsg').classList.remove('hidden');
-            else {
-                document.getElementById('noDeudasMsg').classList.add('hidden');
-                deudores.forEach(([c,m])=>{ if(m>0) deudasBody.innerHTML += `<div class="flex justify-between items-center bg-white border border-gray-100 p-3 rounded-xl shadow-sm"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center font-bold">${c.charAt(0).toUpperCase()}</div><div><span class="font-bold block text-sm text-gray-700">${c}</span><span class="text-red-500 text-xs font-bold">Debe $${m.toFixed(2)}</span></div></div><button onclick="whatsapp('${c}',${m})" class="bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold shadow hover:bg-green-600">Cobrar 💬</button></div>`; });
-            }
-            renderCharts(ventasPorTipo);
+            else { document.getElementById('noDeudasMsg').classList.add('hidden'); deudores.forEach(([c,m])=>{ if(m>0) deudasBody.innerHTML += `<div class="flex justify-between items-center bg-white border border-gray-100 p-3 rounded-xl shadow-sm"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center font-bold">${c.charAt(0).toUpperCase()}</div><div><span class="font-bold block text-sm text-gray-700">${c}</span><span class="text-red-500 text-xs font-bold">Debe $${m.toFixed(2)}</span></div></div><button onclick="whatsapp('${c}',${m})" class="bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold shadow hover:bg-green-600">Cobrar 💬</button></div>`; }); }
+
+            renderCharts(ventasPorTipo, ventas7Dias, labels7Dias, financialStatus, clientSales);
         }
 
+        // --- RENDERIZADO DE GRÁFICAS ---
+        function renderCharts(tipos, trendData, trendLabels, statusData, clientData) {
+            if(!tipos) return;
+
+            // 1. Tipos (Doughnut)
+            if (charts.tipo) charts.tipo.destroy();
+            charts.tipo = new Chart(document.getElementById('chartTipos'), {
+                type: 'doughnut',
+                data: { labels: Object.keys(tipos), datasets: [{ data: Object.values(tipos), backgroundColor: ['#0099ff', '#00d4ff', '#fcd34d', '#ff6b6b', '#a5b4fc', '#2dd4bf', '#fb923c', '#8b5cf6'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true, font: {size: 10} } } }, cutout: '70%' }
+            });
+
+            // 2. Tendencia (Line)
+            if (charts.trend) charts.trend.destroy();
+            charts.trend = new Chart(document.getElementById('chartTendencia'), {
+                type: 'line',
+                data: { 
+                    labels: trendLabels, 
+                    datasets: [{ 
+                        label: 'Ventas ($)', 
+                        data: trendData, 
+                        borderColor: '#0099ff', 
+                        backgroundColor: 'rgba(0, 153, 255, 0.1)', 
+                        fill: true, 
+                        tension: 0.4 
+                    }] 
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
+
+            // 3. Status (Pie)
+            if (charts.status) charts.status.destroy();
+            charts.status = new Chart(document.getElementById('chartStatus'), {
+                type: 'pie',
+                data: { 
+                    labels: ['Cobrado', 'Por Cobrar'], 
+                    datasets: [{ 
+                        data: [statusData['Pagado'] || 0, statusData['Debe'] || 0], 
+                        backgroundColor: ['#22c55e', '#ef4444'], 
+                        borderWidth: 0 
+                    }] 
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            // 4. Top Clientes (Bar Horizontal)
+            if (charts.clients) charts.clients.destroy();
+            const topClients = Object.entries(clientData).sort((a,b) => b[1] - a[1]).slice(0, 5); // Top 5
+            charts.clients = new Chart(document.getElementById('chartClientes'), {
+                type: 'bar',
+                data: { 
+                    labels: topClients.map(c => c[0]), 
+                    datasets: [{ 
+                        label: 'Total Comprado ($)', 
+                        data: topClients.map(c => c[1]), 
+                        backgroundColor: '#fcd34d', 
+                        borderRadius: 5
+                    }] 
+                },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // Utils
         function whatsapp(c, m) { window.open(`https://wa.me/?text=${encodeURIComponent(`Hola ${c}, saldo pendiente: $${m} por galletas 🍪`)}`, '_blank'); }
-        function showTab(id) { document.querySelectorAll('.tab-content').forEach(el=>el.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('text-appBlue')); const active = document.getElementById('nav-' + id); if(active) active.classList.add('text-appBlue'); if(id==='dashboard') renderCharts(); }
+        function showTab(id) { document.querySelectorAll('.tab-content').forEach(el=>el.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('text-appBlue')); const active = document.getElementById('nav-' + id); if(active) active.classList.add('text-appBlue'); if(id==='dashboard') renderCharts(null); /*Charts handled inside processData*/ }
         function saveConfig() { localStorage.setItem('galletasAppUrl', document.getElementById('scriptUrlInput').value); location.reload(); }
         function clearConfig() { if(confirm('¿Desconectar?')) { localStorage.removeItem('galletasAppUrl'); location.reload(); } }
         function animateValue(id, start, end, duration) { const obj = document.getElementById(id); let startTimestamp = null; const step = (timestamp) => { if (!startTimestamp) startTimestamp = timestamp; const progress = Math.min((timestamp - startTimestamp) / duration, 1); obj.innerHTML = "$" + (progress * (end - start) + start).toFixed(2); if (progress < 1) window.requestAnimationFrame(step); }; window.requestAnimationFrame(step); }
-        function renderCharts(data) { if(!data) return; if (charts.tipo) charts.tipo.destroy(); charts.tipo = new Chart(document.getElementById('chartTipos'), { type: 'doughnut', data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#0099ff', '#00d4ff', '#fcd34d', '#ff6b6b', '#a5b4fc'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true } } }, cutout: '75%' } }); }
     </script>
 </body>
 </html>
