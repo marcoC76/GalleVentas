@@ -69,7 +69,31 @@
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         /* Estilo para el input fecha del header */
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+        input[type="date"]::-webkit-calendar-picker-indicator { 
+            filter: invert(1); 
+            cursor: pointer; 
+            background: transparent;
+            padding: 2px;
+            border-radius: 2px;
+        }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Estilos adicionales para date picker en modo claro */
+        [data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: none;
+        }
+        
+        /* Para Firefox */
+        input[type="date"]::-moz-focus-inner {
+            border: 0;
+        }
+        
+        input[type="date"] {
+            cursor: pointer !important;
+        }
         
         /* Estilos para el toggle de tema */
         .theme-toggle {
@@ -131,7 +155,8 @@
             { nombre: "Mermelada Piña",             precio: 25 },
             { nombre: "Mermelada Zarzamora",        precio: 25 },
             { nombre: "Mermelada Chabacano",        precio: 25 },
-            { nombre: "Brownie",                    precio: 25 }
+            { nombre: "Brownie",                    precio: 25 },
+            { nombre: "Mixtas",                     precio: 25 }
         ];
         
         const CATEGORÍAS_GASTOS = [
@@ -149,7 +174,7 @@
             <div class="flex flex-col">
                 <label class="text-xs opacity-80 font-light">Viendo ventas del:</label>
                 <!-- INPUT DE FECHA PARA FILTRAR -->
-                <input type="date" id="filtroFechaHeader" class="bg-transparent text-white font-bold text-lg border-b border-white/30 focus:outline-none pb-1 w-40" onchange="processData()">
+                <input type="date" id="filtroFechaHeader" class="bg-transparent text-white font-bold text-lg border-b border-white/30 focus:outline-none pb-1 w-40 cursor-pointer" title="Seleccionar fecha para filtrar" onchange="processData()">
             </div>
             <button onclick="clearConfig()" class="opacity-70 hover:opacity-100 text-sm border border-white/30 px-3 py-1 rounded-full">Config</button>
         </div>
@@ -283,7 +308,7 @@
 
                 <div class="mb-4">
                     <label class="text-xs font-bold text-gray-400 uppercase">Fecha Registro</label>
-                    <input type="date" id="fechaVenta" class="w-full bg-gray-50 rounded-xl px-4 py-3 mt-1 text-gray-700 border-none focus:ring-2 focus:ring-appBlue transition">
+                    <input type="date" id="fechaVenta" class="w-full bg-gray-50 rounded-xl px-4 py-3 mt-1 text-gray-700 border-none focus:ring-2 focus:ring-appBlue transition cursor-pointer" title="Seleccionar fecha" value="">
                 </div>
 
                 <div class="mb-4">
@@ -330,7 +355,7 @@
                 
                 <div class="mb-4">
                     <label class="text-xs font-bold text-gray-400 uppercase">Fecha del Gasto</label>
-                    <input type="date" id="fechaGasto" class="w-full bg-gray-50 rounded-xl px-4 py-3 mt-1 text-gray-700 border-none focus:ring-2 focus:ring-appBlue transition">
+                    <input type="date" id="fechaGasto" class="w-full bg-gray-50 rounded-xl px-4 py-3 mt-1 text-gray-700 border-none focus:ring-2 focus:ring-appBlue transition cursor-pointer" title="Seleccionar fecha" value="">
                 </div>
 
                 <div class="mb-4">
@@ -385,8 +410,8 @@
                     <div>
                         <label class="text-xs font-bold text-gray-400 uppercase">Rango de Fechas</label>
                         <div class="grid grid-cols-2 gap-2 mt-1">
-                            <input type="date" id="filtroFechaInicio" class="bg-gray-50 rounded-lg px-3 py-2 text-sm border-none focus:ring-2 focus:ring-appBlue">
-                            <input type="date" id="filtroFechaFin" class="bg-gray-50 rounded-lg px-3 py-2 text-sm border-none focus:ring-2 focus:ring-appBlue">
+                            <input type="date" id="filtroFechaInicio" class="bg-gray-50 rounded-lg px-3 py-2 text-sm border-none focus:ring-2 focus:ring-appBlue cursor-pointer" title="Fecha de inicio" placeholder="Inicio">
+                            <input type="date" id="filtroFechaFin" class="bg-gray-50 rounded-lg px-3 py-2 text-sm border-none focus:ring-2 focus:ring-appBlue cursor-pointer" title="Fecha de fin" placeholder="Fin">
                         </div>
                     </div>
                     
@@ -610,10 +635,26 @@
         let isEditing = false;
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Establecer fecha actual en todos los campos de fecha
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('fechaVenta').value = today;
-            document.getElementById('fechaGasto').value = today;
-            document.getElementById('filtroFechaHeader').value = today; // Filtro header inicia en HOY
+            console.log('Setting today date:', today);
+            
+            const fechaVenta = document.getElementById('fechaVenta');
+            const fechaGasto = document.getElementById('fechaGasto');
+            const filtroFechaHeader = document.getElementById('filtroFechaHeader');
+            
+            if (fechaVenta) {
+                fechaVenta.value = today;
+                console.log('fechaVenta set to:', fechaVenta.value);
+            }
+            if (fechaGasto) {
+                fechaGasto.value = today;
+                console.log('fechaGasto set to:', fechaGasto.value);
+            }
+            if (filtroFechaHeader) {
+                filtroFechaHeader.value = today;
+                console.log('filtroFechaHeader set to:', filtroFechaHeader.value);
+            }
             
             cargarOpcionesGalletas();
             cargarCategoriasGastos();
@@ -694,7 +735,12 @@
         function editItem(id) {
             const item = globalData.find(d => d.id == id); if (!item) return;
             isEditing = true; document.getElementById('editId').value = item.id; document.getElementById('cliente').value = item.Cliente;
-            const fo = new Date(item.Fecha); document.getElementById('fechaVenta').value = fo.toISOString().split('T')[0];
+            const dateParts = item.Fecha.split('-');
+            const localDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+            const year = localDate.getFullYear();
+            const month = String(localDate.getMonth() + 1).padStart(2, '0');
+            const day = String(localDate.getDate()).padStart(2, '0');
+            document.getElementById('fechaVenta').value = `${year}-${month}-${day}`;
             document.getElementById('editModeAlert').classList.remove('hidden'); document.getElementById('formTitle').innerText = 'Editar Registro'; document.getElementById('cartSection').classList.remove('hidden'); document.getElementById('cartList').classList.add('hidden'); document.getElementById('btnAddCart').classList.add('hidden');
             document.getElementById('tipo').value = item.Tipo; document.getElementById('cantidad').value = item.Cantidad;
             if (item.Estado === 'Pagado') document.querySelector('input[value="Pagado"]').checked = true; else document.querySelector('input[value="Debe"]').checked = true;
@@ -1478,13 +1524,36 @@
             window.open(`https://wa.me/?text=${encodeURIComponent(`Hola ${c}, saldo pendiente: $${m} por galletas 🍪`)}`, '_blank'); 
         }
         
-        function showTab(id) { 
-            document.querySelectorAll('.tab-content').forEach(el=>el.classList.add('hidden')); 
-            document.getElementById(id).classList.remove('hidden'); 
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('text-appBlue')); 
-            const active = document.getElementById('nav-' + id); 
-            if(active) active.classList.add('text-appBlue'); 
-            if(id==='dashboard') renderCharts(null); 
+        function showTab(tabName) {
+            // Ocultar todas las pestañas
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            // Mostrar la pestaña seleccionada
+            document.getElementById(tabName).classList.remove('hidden');
+            // Actualizar navegación
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('text-appBlue'));
+            document.getElementById(`nav-${tabName}`).classList.add('text-appBlue');
+            
+            // Inicializar fechas cuando se muestra la pestaña de nueva orden o gastos
+            if (tabName === 'nueva' || tabName === 'gastos') {
+                initializeDates();
+            }
+        }
+        
+        function initializeDates() {
+            const today = new Date().toISOString().split('T')[0];
+            console.log('Initializing dates with:', today);
+            
+            const fechaVenta = document.getElementById('fechaVenta');
+            const fechaGasto = document.getElementById('fechaGasto');
+            
+            if (fechaVenta && !fechaVenta.value) {
+                fechaVenta.value = today;
+                console.log('fechaVenta initialized to:', fechaVenta.value);
+            }
+            if (fechaGasto && !fechaGasto.value) {
+                fechaGasto.value = today;
+                console.log('fechaGasto initialized to:', fechaGasto.value);
+            }
         }
         
         function saveConfig() { 
